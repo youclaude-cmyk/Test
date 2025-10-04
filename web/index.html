@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QQL CalliGAN Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: #ffffff;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* 左侧控制面板 */
+        .control-panel {
+            width: 380px;
+            background: #2a2a2a;
+            padding: 15px;
+            overflow-y: auto;
+            border-right: 1px solid #444;
+        }
+
+        .generate-btn {
+            width: 100%;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: background 0.3s;
+        }
+
+        .generate-btn:hover {
+            background: #c0392b;
+        }
+
+        .generate-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        .param-section {
+            margin-bottom: 16px;
+        }
+
+        .param-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .random-toggle {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 11px;
+            padding: 2px 5px;
+            border-radius: 3px;
+            transition: all 0.3s;
+        }
+
+        .random-toggle:hover {
+            background: #444;
+            color: #fff;
+        }
+
+        .random-toggle.active {
+            background: #e74c3c;
+            color: #fff;
+        }
+
+        .param-grid {
+            display: grid;
+            gap: 6px;
+        }
+
+        .param-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .param-label {
+            font-size: 11px;
+            color: #aaa;
+            min-width: 70px;
+        }
+
+        .param-select {
+            flex: 1;
+            background: #333;
+            border: 1px solid #555;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .param-select:focus {
+            outline: none;
+            border-color: #e74c3c;
+        }
+
+        /* 调色板网格 */
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .palette-option {
+            aspect-ratio: 1;
+            border: 1px solid #555;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            min-height: 16px;
+        }
+
+        .palette-option:hover {
+            border-color: #e74c3c;
+            transform: scale(1.1);
+        }
+
+        .palette-option.selected {
+            border-color: #e74c3c;
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+        }
+
+        /* 结构选项网格 */
+        .structure-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-bottom: 5px;
+        }
+
+        .structure-option {
+            aspect-ratio: 1;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            position: relative;
+            min-height: 16px;
+        }
+
+        .structure-option:hover {
+            border-color: #e74c3c;
+            background: #444;
+        }
+
+        .structure-option.selected {
+            border-color: #e74c3c;
+            background: #444;
+        }
+
+        .structure-icon {
+            width: 14px;
+            height: 14px;
+            fill: #aaa;
+        }
+
+        .structure-option.selected .structure-icon {
+            fill: #e74c3c;
+        }
+
+        /* 方向选项网格 */
+        .direction-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .direction-option {
+            aspect-ratio: 1;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            min-height: 16px;
+        }
+
+        .direction-option:hover {
+            border-color: #e74c3c;
+            background: #444;
+        }
+
+        .direction-option.selected {
+            border-color: #e74c3c;
+            background: #444;
+        }
+
+        /* 环形选项 */
+        .rings-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .ring-option {
+            aspect-ratio: 1;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            position: relative;
+            min-height: 16px;
+        }
+
+        .ring-option:hover {
+            border-color: #e74c3c;
+            background: #444;
+        }
+
+        .ring-option.selected {
+            border-color: #e74c3c;
+            background: #444;
+        }
+
+        /* 种子输入区域 */
+        .seed-section {
+            background: #333;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+
+        .seed-input {
+            width: 100%;
+            background: #222;
+            border: 1px solid #555;
+            color: #fff;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 11px;
+            margin-bottom: 8px;
+        }
+
+        .seed-input:focus {
+            outline: none;
+            border-color: #e74c3c;
+        }
+
+        .random-seed-btn {
+            width: 100%;
+            background: #555;
+            color: white;
+            border: none;
+            padding: 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: background 0.3s;
+        }
+
+        .random-seed-btn:hover {
+            background: #666;
+        }
+
+        /* 右侧画布区域 */
+        .canvas-area {
+            flex: 1;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .canvas-container {
+            max-width: 90%;
+            max-height: 90%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .canvas-placeholder {
+            width: 600px;
+            height: 600px;
+            background: #fff;
+            border: 2px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 18px;
+            border-radius: 8px;
+        }
+
+        .generated-image {
+            max-width: 80%;
+            max-height: 80%;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .loading {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .spinner {
+            border: 3px solid #333;
+            border-top: 3px solid #e74c3c;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 滚动条样式 */
+        .control-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .control-panel::-webkit-scrollbar-track {
+            background: #333;
+        }
+
+        .control-panel::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 3px;
+        }
+
+        .control-panel::-webkit-scrollbar-thumb:hover {
+            background: #666;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .control-panel {
+                width: 100%;
+                height: 30vh;
+            }
+            
+            .canvas-area {
+                height: 30vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 左侧控制面板 -->
+        <div class="control-panel">
+            <button class="generate-btn" id="generateBtn">Generate Art</button>
+            
+            <!-- Palette 特征参数区 -->
+            <div class="param-section">
+                <div class="param-title">
+                    Palette
+                    <button class="random-toggle" data-param="palette">⚂</button>
+                </div>
+                <div class="param-row">
+                    <span class="param-label">Palette</span>
+                    <select class="param-select" id="palette">
+                        <option value="Random">Random</option>
+                        <option value="Austin">Austin</option>
+                        <option value="Berlin">Berlin</option>
+                        <option value="Edinburgh">Edinburgh</option>
+                        <option value="Fidenza">Fidenza</option>
+                        <option value="Miami">Miami</option>
+                        <option value="Seattle">Seattle</option>
+                        <option value="Seoul">Seoul</option>
+                    </select>
+                </div>
+                <div class="palette-grid" id="paletteGrid">
+                    <!-- 调色板选项将通过JavaScript生成 -->
+                </div>
+            </div>
+
+            <!-- Color Mode -->
+            <div class="param-section">
+                <div class="param-title">Color Mode</div>
+                <div class="param-row">
+                    <span class="param-label">Mode</span>
+                    <select class="param-select" id="colorMode">
+                        <option value="Simple">Simple</option>
+                        <option value="Stacked">Stacked</option>
+                        <option value="Zebra">Zebra</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Color Variety -->
+            <div class="param-section">
+                <div class="param-title">Color Variety</div>
+                <div class="param-row">
+                    <span class="param-label">Variety</span>
+                    <select class="param-select" id="colorVariety">
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Structure 特征参数区 -->
+            <div class="param-section">
+                <div class="param-title">
+                    Structure
+                    <button class="random-toggle" data-param="structure">⚂</button>
+                </div>
+                <div class="structure-grid" id="structureGrid">
+                    <!-- 结构选项将通过JavaScript生成 -->
+                </div>
+            </div>
+
+            <!-- Direction 特征参数区 -->
+            <div class="param-section">
+                <div class="param-title">
+                    Direction
+                    <button class="random-toggle" data-param="direction">⚂</button>
+                </div>
+                <div class="direction-grid" id="directionGrid">
+                    <!-- 方向选项将通过JavaScript生成 -->
+                </div>
+            </div>
+
+            <!-- Turbulence -->
+            <div class="param-section">
+                <div class="param-title">Turbulence</div>
+                <div class="param-row">
+                    <span class="param-label">Level</span>
+                    <select class="param-select" id="turbulence">
+                        <option value="None">None</option>
+                        <option value="Low">Low</option>
+                        <option value="High">High</option>
+                        <option value="Random">Random</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Margin -->
+            <div class="param-section">
+                <div class="param-title">Margin</div>
+                <div class="param-row">
+                    <span class="param-label">Type</span>
+                    <select class="param-select" id="margin">
+                        <option value="None">None</option>
+                        <option value="Crisp">Crisp</option>
+                        <option value="Wide">Wide</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Ring Size -->
+            <div class="param-section">
+                <div class="param-title">Ring Size</div>
+                <div class="param-row">
+                    <span class="param-label">Size</span>
+                    <select class="param-select" id="ringSize">
+                        <option value="Small">Small</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Large">Large</option>
+                        <option value="Random">Random</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Size Variety -->
+            <div class="param-section">
+                <div class="param-title">Size Variety</div>
+                <div class="param-row">
+                    <span class="param-label">Variety</span>
+                    <select class="param-select" id="sizeVariety">
+                        <option value="Constant">Constant</option>
+                        <option value="Variable">Variable</option>
+                        <option value="Wild">Wild</option>
+                        <option value="Random">Random</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Spacing -->
+            <div class="param-section">
+                <div class="param-title">Spacing</div>
+                <div class="param-row">
+                    <span class="param-label">Density</span>
+                    <select class="param-select" id="spacing">
+                        <option value="Dense">Dense</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Sparse">Sparse</option>
+                        <option value="Random">Random</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Rings 特征参数区 -->
+            <div class="param-section">
+                <div class="param-title">Rings</div>
+                <div class="rings-grid" id="ringsGrid">
+                    <!-- 环形选项将通过JavaScript生成 -->
+                </div>
+            </div>
+
+            <!-- Ring Thickness -->
+            <div class="param-section">
+                <div class="param-title">Ring Thickness</div>
+                <div class="param-row">
+                    <span class="param-label">Thickness</span>
+                    <select class="param-select" id="ringThickness">
+                        <option value="Thin">Thin</option>
+                        <option value="Thick">Thick</option>
+                        <option value="Mixed">Mixed</option>
+                        <option value="Random">Random</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Traits Seed 特征参数区 -->
+            <div class="seed-section">
+                <div class="param-title">Traits Seed</div>
+                <input type="text" class="seed-input" id="seedInput" placeholder="0x..." readonly>
+                <button class="random-seed-btn" id="randomSeedBtn">Random Seed</button>
+            </div>
+        </div>
+
+        <!-- 右侧画布区域 -->
+        <div class="canvas-area">
+            <div class="canvas-container">
+                <div class="canvas-placeholder" id="canvasPlaceholder">
+                    Click "Generate Art" to create artwork
+                </div>
+                <img class="generated-image" id="generatedImage" style="display: none;">
+            </div>
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div>Generating artwork...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // QQL编辑器主要功能
+        class QQLEditor {
+            constructor() {
+                this.currentSeed = '';
+                this.traits = {};
+                this.init();
+            }
+
+            init() {
+                this.initializeGrids();
+                this.bindEvents();
+                this.generateRandomSeed();
+            }
+
+            // 初始化网格选项
+            initializeGrids() {
+                this.initializePaletteGrid();
+                this.initializeStructureGrid();
+                this.initializeDirectionGrid();
+                this.initializeRingsGrid();
+            }
+
+            // 初始化调色板网格
+            initializePaletteGrid() {
+                const paletteGrid = document.getElementById('paletteGrid');
+                const palettes = ['Random', 'Austin', 'Berlin', 'Edinburgh', 'Fidenza', 'Miami', 'Seattle', 'Seoul'];
+                
+                palettes.forEach((palette, index) => {
+                    const option = document.createElement('div');
+                    option.className = 'palette-option';
+                    option.dataset.value = palette;
+                    option.style.background = this.getPaletteColor(palette);
+                    option.title = palette;
+                    
+                    if (index === 0) option.classList.add('selected');
+                    
+                    option.addEventListener('click', () => {
+                        document.querySelectorAll('.palette-option').forEach(el => el.classList.remove('selected'));
+                        option.classList.add('selected');
+                        document.getElementById('palette').value = palette;
+                        this.updateTraits();
+                    });
+                    
+                    paletteGrid.appendChild(option);
+                });
+            }
+
+            // 获取调色板颜色
+            getPaletteColor(palette) {
+                const colors = {
+                    'Random': 'linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4)',
+                    'Austin': 'linear-gradient(45deg, #d63031, #74b9ff)',
+                    'Berlin': 'linear-gradient(45deg, #2d3436, #636e72)',
+                    'Edinburgh': 'linear-gradient(45deg, #6c5ce7, #a29bfe)',
+                    'Fidenza': 'linear-gradient(45deg, #fd79a8, #fdcb6e)',
+                    'Miami': 'linear-gradient(45deg, #00cec9, #ff7675)',
+                    'Seattle': 'linear-gradient(45deg, #0984e3, #00b894)',
+                    'Seoul': 'linear-gradient(45deg, #e17055, #81ecec)'
+                };
+                return colors[palette] || '#666';
+            }
+
+            // 初始化结构网格
+            initializeStructureGrid() {
+                const structureGrid = document.getElementById('structureGrid');
+                const structures = ['Random', 'Orbital', 'Formation', 'Shadows'];
+                
+                structures.forEach((structure, index) => {
+                    const option = document.createElement('div');
+                    option.className = 'structure-option';
+                    option.dataset.value = structure;
+                    option.innerHTML = this.getStructureIcon(structure);
+                    option.title = structure;
+                    
+                    if (index === 0) option.classList.add('selected');
+                    
+                    option.addEventListener('click', () => {
+                        document.querySelectorAll('.structure-option').forEach(el => el.classList.remove('selected'));
+                        option.classList.add('selected');
+                        this.updateTraits();
+                    });
+                    
+                    structureGrid.appendChild(option);
+                });
+            }
+
+            // 获取结构图标
+            getStructureIcon(structure) {
+                const icons = {
+                    'Random': '⚂',
+                    'Orbital': '🌀',
+                    'Formation': '⬢',
+                    'Shadows': '🌑'
+                };
+                return `<span style="font-size: 16px;">${icons[structure] || '●'}</span>`;
+            }
+
+            // 初始化方向网格
+            initializeDirectionGrid() {
+                const directionGrid = document.getElementById('directionGrid');
+                const directions = ['Random', 'Horizontal', 'Diagonal', 'Vertical', 'Random Linear', 'Explosive', 'Spiral', 'Circular'];
+                
+                directions.forEach((direction, index) => {
+                    const option = document.createElement('div');
+                    option.className = 'direction-option';
+                    option.dataset.value = direction;
+                    option.innerHTML = this.getDirectionIcon(direction);
+                    option.title = direction;
+                    
+                    if (index === 0) option.classList.add('selected');
+                    
+                    option.addEventListener('click', () => {
+                        document.querySelectorAll('.direction-option').forEach(el => el.classList.remove('selected'));
+                        option.classList.add('selected');
+                        this.updateTraits();
+                    });
+                    
+                    directionGrid.appendChild(option);
+                });
+            }
+
+            // 获取方向图标
+            getDirectionIcon(direction) {
+                const icons = {
+                    'Random': '⚂',
+                    'Horizontal': '↔',
+                    'Diagonal': '↗',
+                    'Vertical': '↕',
+                    'Random Linear': '📏',
+                    'Explosive': '💥',
+                    'Spiral': '🌀',
+                    'Circular': '⭕'
+                };
+                return `<span style="font-size: 16px;">${icons[direction] || '●'}</span>`;
+            }
+
+            // 初始化环形网格
+            initializeRingsGrid() {
+                const ringsGrid = document.getElementById('ringsGrid');
+                const rings = ['1', '3', '7', 'All', 'None', 'Random'];
+                
+                rings.forEach((ring, index) => {
+                    const option = document.createElement('div');
+                    option.className = 'ring-option';
+                    option.dataset.value = ring;
+                    option.innerHTML = this.getRingIcon(ring);
+                    option.title = ring;
+                    
+                    if (index === 2) option.classList.add('selected'); // 默认选择 '7'
+                    
+                    option.addEventListener('click', () => {
+                        document.querySelectorAll('.ring-option').forEach(el => el.classList.remove('selected'));
+                        option.classList.add('selected');
+                        this.updateTraits();
+                    });
+                    
+                    ringsGrid.appendChild(option);
+                });
+            }
+
+            // 获取环形图标
+            getRingIcon(ring) {
+                if (ring === 'Random') return '<span style="font-size: 16px;">⚂</span>';
+                if (ring === 'None') return '<span style="font-size: 16px;">∅</span>';
+                if (ring === 'All') return '<span style="font-size: 16px;">∞</span>';
+                return `<span style="font-size: 16px;">${ring}</span>`;
+            }
+
+            // 绑定事件
+            bindEvents() {
+                // 生成按钮
+                document.getElementById('generateBtn').addEventListener('click', () => {
+                    this.generateArt();
+                });
+
+                // 随机种子按钮
+                document.getElementById('randomSeedBtn').addEventListener('click', () => {
+                    this.generateRandomSeed();
+                });
+
+                // 种子输入框变化
+                document.getElementById('seedInput').addEventListener('input', (e) => {
+                    this.currentSeed = e.target.value;
+                    console.log('Seed input changed:', this.currentSeed);
+                });
+
+                // 参数选择器变化
+                document.querySelectorAll('.param-select').forEach(select => {
+                    select.addEventListener('change', () => {
+                        this.updateTraits();
+                    });
+                });
+
+                // 随机切换按钮
+                document.querySelectorAll('.random-toggle').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const param = e.target.dataset.param;
+                        this.randomizeParam(param);
+                    });
+                });
+
+                // 键盘事件
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 's' || e.key === 'S') {
+                        e.preventDefault();
+                        this.saveArtwork();
+                    }
+                });
+            }
+
+            // 随机化参数
+            randomizeParam(param) {
+                if (param === 'palette') {
+                    const options = document.querySelectorAll('.palette-option');
+                    const randomIndex = Math.floor(Math.random() * options.length);
+                    options.forEach(opt => opt.classList.remove('selected'));
+                    options[randomIndex].classList.add('selected');
+                    document.getElementById('palette').value = options[randomIndex].dataset.value;
+                } else if (param === 'structure') {
+                    const options = document.querySelectorAll('.structure-option');
+                    const randomIndex = Math.floor(Math.random() * options.length);
+                    options.forEach(opt => opt.classList.remove('selected'));
+                    options[randomIndex].classList.add('selected');
+                } else if (param === 'direction') {
+                    const options = document.querySelectorAll('.direction-option');
+                    const randomIndex = Math.floor(Math.random() * options.length);
+                    options.forEach(opt => opt.classList.remove('selected'));
+                    options[randomIndex].classList.add('selected');
+                }
+                this.updateTraits();
+            }
+
+            // 更新特征参数
+            updateTraits() {
+                this.traits = {
+                    palette: document.getElementById('palette').value,
+                    colorMode: document.getElementById('colorMode').value,
+                    colorVariety: document.getElementById('colorVariety').value,
+                    structure: document.querySelector('.structure-option.selected')?.dataset.value || 'Random',
+                    direction: document.querySelector('.direction-option.selected')?.dataset.value || 'Random',
+                    turbulence: document.getElementById('turbulence').value,
+                    margin: document.getElementById('margin').value,
+                    ringSize: document.getElementById('ringSize').value,
+                    sizeVariety: document.getElementById('sizeVariety').value,
+                    spacing: document.getElementById('spacing').value,
+                    rings: document.querySelector('.ring-option.selected')?.dataset.value || '7',
+                    ringThickness: document.getElementById('ringThickness').value
+                };
+                
+                this.generateSeedFromTraits();
+            }
+
+            // 从特征生成种子
+            generateSeedFromTraits() {
+                // 简化的种子生成算法
+                const traitString = JSON.stringify(this.traits);
+                let hash = 0;
+                for (let i = 0; i < traitString.length; i++) {
+                    const char = traitString.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash; // 转换为32位整数
+                }
+                
+                // 生成64位十六进制种子
+                const seed1 = Math.abs(hash).toString(16).padStart(8, '0');
+                const seed2 = Math.abs(hash * 31).toString(16).padStart(8, '0');
+                const seed3 = Math.abs(hash * 37).toString(16).padStart(8, '0');
+                const seed4 = Math.abs(hash * 41).toString(16).padStart(8, '0');
+                
+                this.currentSeed = `0x${seed1}${seed2}${seed3}${seed4}`;
+                document.getElementById('seedInput').value = this.currentSeed;
+            }
+
+            // 生成随机种子
+            generateRandomSeed() {
+                const randomBytes = new Uint8Array(32);
+                crypto.getRandomValues(randomBytes);
+                this.currentSeed = '0x' + Array.from(randomBytes)
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('');
+                document.getElementById('seedInput').value = this.currentSeed;
+                console.log('Generated new random seed:', this.currentSeed);
+            }
+
+            // 验证种子格式
+            isValidSeed(seed) {
+                if (!seed || typeof seed !== 'string') {
+                    return false;
+                }
+                // 检查是否以0x开头且总长度为66个字符（0x + 64个十六进制字符）
+                const hexPattern = /^0x[0-9a-fA-F]{64}$/;
+                return hexPattern.test(seed);
+            }
+
+            // 生成艺术作品
+            async generateArt() {
+                const generateBtn = document.getElementById('generateBtn');
+                const loading = document.getElementById('loading');
+                const canvasPlaceholder = document.getElementById('canvasPlaceholder');
+                const generatedImage = document.getElementById('generatedImage');
+
+                try {
+                    // 确保有有效的种子
+                    if (!this.currentSeed || !this.isValidSeed(this.currentSeed)) {
+                        console.log('Invalid seed, generating new one:', this.currentSeed);
+                        this.generateRandomSeed();
+                    }
+
+                    console.log('Generating art with seed:', this.currentSeed);
+                    console.log('Seed length:', this.currentSeed.length);
+                    console.log('Seed format valid:', this.isValidSeed(this.currentSeed));
+
+                    generateBtn.disabled = true;
+                    generateBtn.textContent = 'Generating...';
+                    loading.style.display = 'block';
+                    canvasPlaceholder.style.display = 'none';
+                    generatedImage.style.display = 'none';
+
+                    const response = await fetch('/api/generate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            seed: this.currentSeed,
+                            width: 800,
+                            traits: this.traits
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        generatedImage.src = `/api/image/${result.filename}?t=${Date.now()}`;
+                        generatedImage.style.display = 'block';
+                        generatedImage.onload = () => {
+                            loading.style.display = 'none';
+                        };
+                        
+                        // 存储当前生成的文件名，用于保存功能
+                        window.currentFilename = result.filename;
+                        console.log('Generated artwork:', result);
+                    } else {
+                        throw new Error(result.error || 'Generation failed');
+                    }
+
+                } catch (error) {
+                    console.error('Error generating art:', error);
+                    alert('Failed to generate artwork: ' + error.message);
+                    loading.style.display = 'none';
+                    canvasPlaceholder.style.display = 'flex';
+                    canvasPlaceholder.textContent = 'Generation failed. Click "Generate Art" to try again.';
+                } finally {
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = 'Generate Art';
+                }
+            }
+
+            // 保存艺术作品
+            async saveArtwork() {
+                if (!this.currentSeed || !window.currentFilename) {
+                    alert('No artwork to save. Generate an artwork first.');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/save', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            seed: this.currentSeed
+                        }),
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert(`Artwork saved as: ${result.filename}`);
+                        console.log('Saved artwork:', result);
+                    } else {
+                        throw new Error(result.error || 'Save failed');
+                    }
+
+                } catch (error) {
+                    console.error('Error saving artwork:', error);
+                    alert('Failed to save artwork: ' + error.message);
+                }
+            }
+        }
+
+        // 初始化编辑器
+        document.addEventListener('DOMContentLoaded', () => {
+            new QQLEditor();
+        });
+    </script>
+</body>
+</html>

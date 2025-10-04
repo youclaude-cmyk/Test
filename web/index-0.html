@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QQL CalliGAN - 艺术生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            margin: 20px 0;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section h2 {
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 5px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .output {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+        }
+        
+        .status {
+            text-align: center;
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 QQL CalliGAN</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">
+            基于Rust后端的艺术生成系统
+        </p>
+        
+        <div class="section">
+            <h2>🚀 系统状态</h2>
+            <div id="systemStatus" class="status info">
+                正在检查系统状态...
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>⚙️ 生成参数</h2>
+            <div class="grid">
+                <div class="form-group">
+                    <label for="seed">种子值 (Seed):</label>
+                    <input type="text" id="seed" placeholder="输入种子值或留空随机生成">
+                </div>
+                <div class="form-group">
+                    <label for="width">图像宽度:</label>
+                    <select id="width">
+                        <option value="800">800px</option>
+                        <option value="1200">1200px</option>
+                        <option value="2400" selected>2400px (默认)</option>
+                        <option value="4800">4800px</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="outputPath">输出路径:</label>
+                <input type="text" id="outputPath" value="./output" placeholder="输出文件夹路径">
+            </div>
+            
+            <button class="btn" onclick="generateArt()">🎨 生成艺术作品</button>
+        </div>
+        
+        <div class="section">
+            <h2>📊 输出日志</h2>
+            <div id="output" class="output">等待操作...</div>
+        </div>
+        
+        <div class="section">
+            <h2>🔧 后端工具测试</h2>
+            <button class="btn" onclick="testBackend()">测试 qql-cli</button>
+            <button class="btn" onclick="showHelp()">显示帮助信息</button>
+        </div>
+    </div>
+
+    <script>
+        let isGenerating = false;
+        
+        // 检查系统状态
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                const statusDiv = document.getElementById('systemStatus');
+                if (data.success) {
+                    statusDiv.className = 'status success';
+                    statusDiv.textContent = `✅ 系统就绪 - Rust后端已编译，版本: ${data.version || 'unknown'}`;
+                } else {
+                    statusDiv.className = 'status error';
+                    statusDiv.textContent = `❌ 系统错误: ${data.error}`;
+                }
+            } catch (error) {
+                const statusDiv = document.getElementById('systemStatus');
+                statusDiv.className = 'status error';
+                statusDiv.textContent = `❌ 无法连接到后端服务: ${error.message}`;
+            }
+        }
+        
+        // 生成艺术作品
+        async function generateArt() {
+            if (isGenerating) return;
+            
+            isGenerating = true;
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '🔄 生成中...';
+            btn.disabled = true;
+            
+            const seed = document.getElementById('seed').value;
+            const width = document.getElementById('width').value;
+            const outputPath = document.getElementById('outputPath').value;
+            
+            const outputDiv = document.getElementById('output');
+            outputDiv.textContent = '开始生成艺术作品...\\n';
+            
+            try {
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        seed: seed || null,
+                        width: parseInt(width),
+                        outputPath: outputPath
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    outputDiv.textContent += `✅ 生成成功!\\n`;
+                    outputDiv.textContent += `📁 输出文件: ${data.outputFile}\\n`;
+                    outputDiv.textContent += `🎯 使用种子: ${data.seed}\\n`;
+                    outputDiv.textContent += `⏱️ 耗时: ${data.duration}\\n`;
+                    if (data.logs) {
+                        outputDiv.textContent += `\\n📋 详细日志:\\n${data.logs}`;
+                    }
+                } else {
+                    outputDiv.textContent += `❌ 生成失败: ${data.error}\\n`;
+                    if (data.logs) {
+                        outputDiv.textContent += `\\n📋 错误日志:\\n${data.logs}`;
+                    }
+                }
+            } catch (error) {
+                outputDiv.textContent += `❌ 请求失败: ${error.message}\\n`;
+            }
+            
+            isGenerating = false;
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+        
+        // 测试后端
+        async function testBackend() {
+            const outputDiv = document.getElementById('output');
+            outputDiv.textContent = '测试后端连接...\\n';
+            
+            try {
+                const response = await fetch('/api/test');
+                const data = await response.json();
+                
+                if (data.success) {
+                    outputDiv.textContent += `✅ 后端测试成功!\\n`;
+                    outputDiv.textContent += `📋 输出:\\n${data.output}`;
+                } else {
+                    outputDiv.textContent += `❌ 后端测试失败: ${data.error}\\n`;
+                }
+            } catch (error) {
+                outputDiv.textContent += `❌ 测试请求失败: ${error.message}\\n`;
+            }
+        }
+        
+        // 显示帮助信息
+        async function showHelp() {
+            const outputDiv = document.getElementById('output');
+            outputDiv.textContent = '获取帮助信息...\\n';
+            
+            try {
+                const response = await fetch('/api/help');
+                const data = await response.json();
+                
+                if (data.success) {
+                    outputDiv.textContent = `📖 qql-cli 帮助信息:\\n\\n${data.help}`;
+                } else {
+                    outputDiv.textContent += `❌ 获取帮助失败: ${data.error}\\n`;
+                }
+            } catch (error) {
+                outputDiv.textContent += `❌ 请求失败: ${error.message}\\n`;
+            }
+        }
+        
+        // 页面加载时检查系统状态
+        document.addEventListener('DOMContentLoaded', checkSystemStatus);
+        
+        // 每30秒检查一次系统状态
+        setInterval(checkSystemStatus, 30000);
+    </script>
+</body>
+</html>
